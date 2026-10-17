@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minecraft AP Edition - Creativo Studio</title>
+    <!-- Tailwind CSS for UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts for retro/Minecraft look -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Press Start 2P', monospace;
+            background-color: #111;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .mc-btn {
+            background: #727272;
+            border-top: 2px solid #fff;
+            border-left: 2px solid #fff;
+            border-right: 2px solid #373737;
+            border-bottom: 2px solid #373737;
+            color: #fff;
+            text-shadow: 2px 2px #000;
+            transition: all 0.1s ease;
+            cursor: pointer;
+        }
+        .mc-btn:hover {
+            background: #858585;
+            border-color: #ffff55;
+            color: #ffff55;
+        }
+        .mc-btn:active {
+            background: #555555;
+            border-top: 2px solid #373737;
+            border-left: 2px solid #373737;
+            border-right: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+        }
+        .mc-panel {
+            background: rgba(0, 0, 0, 0.9);
+            border: 4px solid #373737;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 40;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 0 2px rgba(0,0,0,0.8);
+        }
+        #crosshair::before { top: 7px; left: 0; width: 16px; height: 2px; }
+        #crosshair::after { top: 0; left: 7px; width: 2px; height: 16px; }
+
+        #touch-look-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            touch-action: none;
+        }
+        .grid-cell {
+            border: 1px solid #333;
+            cursor: pointer;
+        }
+        .grid-cell:hover {
+            border-color: #fff;
+        }
+        .hotbar-slot {
+            width: 44px;
+            height: 44px;
+            border: 3px solid #373737;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .hotbar-slot.active {
+            border-color: #ffffff;
+            box-shadow: 0 0 10px #ffffff;
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen">
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="main-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-between bg-cover bg-center p-6" style="background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://placehold.co/1920x1080/2a2a2a/ffffff?text=Minecraft+AP+Creative');">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        
+        <div class="relative z-10 flex flex-col items-center mt-4">
+            <h1 class="text-2xl sm:text-4xl md:text-5xl text-yellow-300 font-bold mb-1 tracking-wider text-center drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)]" style="text-shadow: 3px 3px #3f3f00;">
+                MINECRAFT AP EDITION
+            </h1>
+            <p class="text-[9px] sm:text-xs text-green-400 tracking-widest bg-black/60 px-3 py-1 rounded">MODO CREATIVO &amp; JUEGO COMPLETO</p>
+        </div>
+
+        <div class="relative z-10 flex flex-col gap-3 w-full max-w-sm">
+            <button onclick="showWorldSizeMenu()" class="mc-btn py-3.5 px-5 text-xs sm:text-sm font-bold uppercase tracking-wider text-center">
+                🎮 Jugar (Creativo)
+            </button>
+            
+            <!-- Texturas Studio Button (With 'Próximamente' Ribbon -> opens info screen) -->
+            <div class="relative w-full overflow-hidden rounded cursor-pointer" onclick="showUpdatesInfoScreen()">
+                <button class="mc-btn w-full py-3.5 px-5 text-xs sm:text-sm font-bold uppercase tracking-wider text-center text-yellow-300 border-yellow-500 opacity-80 pointer-events-none">
+                    🎨 Texturas Studio
+                </button>
+                <div class="absolute top-2 -right-8 bg-yellow-400 text-black font-extrabold text-[8px] py-0.5 w-32 text-center transform rotate-12 shadow-md border border-yellow-600 tracking-wider">
+                    PRÓXIMAMENTE
+                </div>
+            </div>
+
+            <!-- Creador de Mapas Button (With 'Próximamente' Ribbon -> opens info screen) -->
+            <div class="relative w-full overflow-hidden rounded cursor-pointer" onclick="showUpdatesInfoScreen()">
+                <button class="mc-btn w-full py-3.5 px-5 text-xs sm:text-sm font-bold uppercase tracking-wider text-center text-cyan-300 border-cyan-500 opacity-80 pointer-events-none">
+                    🗺️ Creador de Mapas
+                </button>
+                <div class="absolute top-2 -right-8 bg-yellow-400 text-black font-extrabold text-[8px] py-0.5 w-32 text-center transform rotate-12 shadow-md border border-yellow-600 tracking-wider">
+                    PRÓXIMAMENTE
+                </div>
+            </div>
+
+            <button onclick="showGraphicsSettings()" class="mc-btn py-3.5 px-5 text-xs sm:text-sm font-bold uppercase tracking-wider text-center text-purple-300 border-purple-500">
+                ⚙️ Configuraciones
+            </button>
+        </div>
+
+        <div class="relative z-10 w-full flex justify-end items-end text-[10px] sm:text-xs text-gray-300 drop-shadow-md pointer-events-none">
+            <div class="text-right bg-black/70 px-3 py-1.5 rounded border border-gray-700">
+                <div>Edición Jugable V4.0</div>
+                <div>Desarrollado para AP</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPDATES INFO OVERLAY -->
+    <div id="updates-info-menu" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/90 p-4">
+        <div class="relative z-10 flex flex-col items-center max-w-lg w-full px-6 mc-panel p-6 rounded-lg space-y-4 text-center">
+            <h2 class="text-lg sm:text-xl text-yellow-300 font-bold border-b-2 border-yellow-500 pb-2 w-full tracking-wider">
+                PRÓXIMAS ACTUALIZACIONES
+            </h2>
+            <p class="text-xs sm:text-sm text-gray-200 leading-relaxed font-sans font-medium bg-black/50 p-4 rounded border border-gray-800">
+                Este apartado sirve para informar sobre próximas actualizaciones si estás leyendo esto quiero que lo comprendas gracias
+            </p>
+            <div class="w-full bg-gray-900/90 border border-yellow-500/50 p-3 rounded text-left">
+                <span class="text-[10px] sm:text-xs text-yellow-400 font-bold block mb-1">📅 Log de Actualizaciones:</span>
+                <p class="text-[10px] sm:text-xs text-gray-300 font-sans">
+                    • 17-18/10/26. Actualización de botones no usables
+                </p>
+            </div>
+            <button onclick="backToMainMenu()" class="mc-btn py-3 px-6 text-xs font-bold uppercase w-full max-w-xs mt-2 border-yellow-500 text-yellow-300">
+                VOLVER
+            </button>
+        </div>
+    </div>
+
+    <!-- TEXTURE STUDIO OVERLAY -->
+    <div id="texture-studio-menu" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/90 p-4 overflow-y-auto">
+        <div class="relative z-10 flex flex-col items-center max-w-lg w-full px-5 mc-panel p-6 rounded-lg space-y-4 my-auto">
+            <h2 class="text-xl sm:text-2xl text-yellow-300 font-bold text-center border-b-2 border-yellow-500 pb-2 w-full flex items-center justify-center gap-2">
+                🎨 TEXTURAS STUDIO
+            </h2>
+            <p class="text-[10px] text-gray-300 text-center leading-relaxed">
+                Crea bloques personalizados para usarlos inmediatamente en tu mundo 3D.
+            </p>
+
+            <div class="flex flex-col items-center gap-4 w-full">
+                <div class="flex items-center justify-between w-full max-w-xs bg-gray-900/80 p-3 rounded border border-gray-700">
+                    <span class="text-xs text-white font-bold italic">COLOR BASE</span>
+                    <input type="color" id="custom-block-color" value="#b91c1c" oninput="onCustomColorChange(this.value)" class="w-12 h-12 bg-transparent cursor-pointer rounded border-2 border-white shadow-md">
+                </div>
+
+                <button onclick="openPixelEditorModal()" class="mc-btn w-full max-w-xs py-3 px-4 text-xs font-bold uppercase text-yellow-300 border-yellow-400 tracking-wider flex items-center justify-center gap-2 shadow-lg">
+                    🖌️ DETALLAR PÍXELES
+                </button>
+
+                <div class="flex flex-col items-center gap-1 w-full">
+                    <span class="text-xs text-yellow-300 font-bold italic tracking-wide">VISTA PREVIA 3D</span>
+                    <div id="block-preview-3d-container" class="w-36 h-36 border-4 border-yellow-500 rounded bg-black/60 shadow-inner relative">
+                        <canvas id="preview-canvas-3d" class="w-full h-full rounded"></canvas>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-1 w-full max-w-xs text-left">
+                    <span class="text-xs text-white font-bold italic">NOMBRE DEL BLOQUE:</span>
+                    <input type="text" id="custom-block-name" value="Bloque Custom" class="bg-gray-800 text-yellow-300 border-2 border-gray-600 rounded p-2 text-xs font-bold w-full focus:outline-none focus:border-yellow-400">
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full pt-2">
+                <button onclick="addCustomColorBlock()" class="mc-btn py-3.5 text-xs font-bold uppercase flex-1 border-green-500 text-green-300">
+                    ➕ AÑADIR A BARRA
+                </button>
+                <button onclick="backToMainMenu()" class="mc-btn py-3.5 text-xs font-bold uppercase flex-1 border-gray-500 text-gray-200">
+                    VOLVER
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIXEL DETAIL EDITOR MODAL -->
+    <div id="pixel-editor-modal" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/95 p-3 overflow-y-auto">
+        <div class="mc-panel p-5 rounded-lg max-w-md w-full flex flex-col items-center space-y-3">
+            <h3 class="text-sm sm:text-base text-yellow-300 font-bold border-b-2 border-yellow-500 pb-1 w-full text-center">🖌️ EDITOR DE PÍXELES</h3>
+            
+            <div class="flex items-center justify-between w-full text-xs text-gray-200 bg-gray-900 p-2 rounded border border-gray-700">
+                <span>Color de Pincel:</span>
+                <input type="color" id="pixel-brush-color" value="#ffff00" class="w-8 h-8 bg-transparent cursor-pointer rounded border border-white">
+            </div>
+
+            <div class="border-4 border-yellow-400 bg-gray-950 p-1 rounded shadow-2xl flex items-center justify-center">
+                <canvas id="pixel-editor-canvas" width="200" height="200" class="cursor-crosshair block rounded"></canvas>
+            </div>
+
+            <div class="flex gap-2 w-full pt-2">
+                <button onclick="fillPixelGridWithBrush()" class="mc-btn py-2 text-[10px] font-bold uppercase flex-1 border-blue-400 text-blue-300">
+                    🪣 Rellenar
+                </button>
+                <button onclick="closePixelEditorModal()" class="mc-btn py-2 text-[10px] font-bold uppercase flex-1 border-green-500 text-green-300">
+                    ✔️ Aplicar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP MAKER OVERLAY -->
+    <div id="map-maker-menu" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/90 p-4">
+        <div class="relative z-10 flex flex-col items-center max-w-xl w-full px-4 mc-panel p-5 rounded-lg space-y-3">
+            <h2 class="text-lg sm:text-xl text-cyan-300 font-bold text-center border-b-2 border-cyan-500 pb-2 w-full">🗺️ CREADOR DE MAPAS</h2>
+            <p class="text-[10px] text-gray-300 text-center">Dibuja la distribución en 2D y constrúyela en un mundo 3D jugable.</p>
+
+            <div id="map-grid-container" class="grid grid-cols-10 gap-1 p-2 bg-gray-900 border-2 border-gray-700 rounded my-1">
+            </div>
+
+            <div class="flex items-center gap-2 my-1 text-xs flex-wrap justify-center">
+                <span class="text-gray-300 text-[10px]">Pincel:</span>
+                <button onclick="setMapMakerBrush(1)" id="brush-1" class="mc-btn px-2 py-1 text-[9px] border-yellow-400">Tierra</button>
+                <button onclick="setMapMakerBrush(2)" id="brush-2" class="mc-btn px-2 py-1 text-[9px]">Piedra</button>
+                <button onclick="setMapMakerBrush(3)" id="brush-3" class="mc-btn px-2 py-1 text-[9px]">Pasto</button>
+                <button onclick="setMapMakerBrush(4)" id="brush-4" class="mc-btn px-2 py-1 text-[9px]">Madera</button>
+                <button onclick="setMapMakerBrush(0)" id="brush-0" class="mc-btn px-2 py-1 text-[9px] text-red-400">Vacío</button>
+            </div>
+
+            <div class="flex gap-3 w-full pt-2">
+                <button onclick="playCustomMap()" class="mc-btn py-3 text-xs font-bold uppercase flex-1 border-cyan-500 text-cyan-300">
+                    🎮 Jugar Mapa
+                </button>
+                <button onclick="backToMainMenu()" class="mc-btn py-3 text-xs font-bold uppercase px-4">
+                    Volver
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIGURACIONES OVERLAY (SETTINGS) -->
+    <div id="graphics-settings-menu" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/90 p-4">
+        <div class="relative z-10 flex flex-col items-center max-w-md w-full px-6 mc-panel p-6 rounded-lg space-y-4">
+            <h2 class="text-lg sm:text-xl text-purple-300 font-bold text-center border-b-2 border-purple-500 pb-2 w-full">⚙️ CONFIGURACIONES</h2>
+
+            <div class="flex flex-col gap-3 w-full my-1">
+                <div class="flex flex-col gap-2 bg-gray-900 p-3 rounded border border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs text-white font-bold">Sensibilidad Cámara</div>
+                        <span id="sensitivity-value-display" class="text-xs text-yellow-300 font-bold">100%</span>
+                    </div>
+                    <input type="range" id="sensitivity-slider" min="10" max="200" value="100" oninput="updateSensitivity(this.value)" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-400">
+                </div>
+
+                <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-700">
+                    <div>
+                        <div class="text-xs text-white font-bold">Modo Vuelo Inicial</div>
+                    </div>
+                    <button onclick="toggleFlightModeSetting()" id="flight-toggle-btn" class="mc-btn px-3 py-2 text-[10px] font-bold text-green-300 border-green-500">
+                        ON
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full pt-2">
+                <button onclick="backToMainMenu()" class="mc-btn py-3 text-xs font-bold uppercase w-full">
+                    Guardar y Volver
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WORLD CREATION MENU -->
+    <div id="world-size-menu" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/80 p-4">
+        <div class="relative z-10 flex flex-col items-center max-w-lg w-full px-4 mc-panel p-6 rounded-lg space-y-4">
+            <h2 class="text-xl sm:text-2xl text-yellow-300 font-bold text-center border-b-2 border-yellow-500 pb-2 w-full">SELECCIONA TAMAÑO</h2>
+
+            <div class="w-full text-left">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                    <button onclick="selectWorldSize(16)" id="size-btn-16" class="mc-btn py-3 text-[10px] font-bold">16 x 16 (Pequeño)</button>
+                    <button onclick="selectWorldSize(32)" id="size-btn-32" class="mc-btn py-3 text-[10px] font-bold border-yellow-400">32 x 32 (Mediano)</button>
+                    <button onclick="selectWorldSize(64)" id="size-btn-64" class="mc-btn py-3 text-[10px] font-bold">64 x 64 (Grande)</button>
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full pt-2">
+                <button onclick="startNewGame()" class="mc-btn py-3 text-xs font-bold uppercase flex-1 border-green-500 text-green-300">
+                    🚀 INICIAR JUEGO
+                </button>
+                <button onclick="backToMainMenu()" class="mc-btn py-3 text-xs font-bold uppercase flex-1">
+                    VOLVER
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAUSE MENU -->
+    <div id="pause-menu" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/80 p-4">
+        <div class="mc-panel p-6 rounded-lg max-w-xs w-full flex flex-col gap-3 text-center">
+            <h2 class="text-lg text-yellow-300 font-bold mb-2">PAUSA</h2>
+            <button onclick="resumeGame()" class="mc-btn py-3 text-xs font-bold uppercase">Continuar</button>
+            <button onclick="exitToMainMenu()" class="mc-btn py-3 text-xs font-bold uppercase text-red-400 border-red-500">Salir al Menú</button>
+        </div>
+    </div>
+
+    <!-- GAME HUD & TOUCH ZONES -->
+    <div id="crosshair" class="hidden"></div>
+    <div id="touch-look-zone" class="hidden"></div>
+
+    <div id="game-hud" class="absolute inset-0 z-30 pointer-events-none hidden flex flex-col justify-between p-3 sm:p-4">
+        <!-- Top Info HUD -->
+        <div class="flex justify-between items-start pointer-events-auto">
+            <div class="bg-black/70 p-2 rounded border border-gray-700 text-[9px] sm:text-[10px] text-white space-y-1">
+                <div>Mundo: <span id="hud-world-info" class="text-yellow-300">32x32</span></div>
+                <div>Modo: <span id="flight-mode-text" class="text-cyan-400">Vuelo ON</span></div>
+                <div class="text-[8px] text-gray-400 hidden md:block">Clic en pantalla: Activar Cámara | WASD: Mover | Clic Izq: Romper | Clic Der: Colocar</div>
+            </div>
+            
+            <button onclick="pauseGame()" class="mc-btn px-3 py-2 text-xs font-bold text-yellow-300">
+                ⏸️ Pausa
+            </button>
+        </div>
+
+        <!-- Touch Controls for Mobile Devices -->
+        <div class="pointer-events-auto flex justify-between items-end w-full md:hidden mb-2">
+            <div class="grid grid-cols-3 gap-1 w-32 h-32 bg-black/50 p-1 rounded-lg border border-gray-700">
+                <div></div>
+                <button id="btn-touch-fwd" class="mc-btn flex items-center justify-center text-sm font-bold">▲</button>
+                <div></div>
+                <button id="btn-touch-left" class="mc-btn flex items-center justify-center text-sm font-bold">◀</button>
+                <div class="flex items-center justify-center text-[8px] text-gray-400 font-bold">PAD</div>
+                <button id="btn-touch-right" class="mc-btn flex items-center justify-center text-sm font-bold">▶</button>
+                <div></div>
+                <button id="btn-touch-back" class="mc-btn flex items-center justify-center text-sm font-bold">▼</button>
+                <div></div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <button id="btn-touch-up" class="mc-btn w-12 h-12 text-xs font-bold bg-blue-900/80">▲ Subir</button>
+                <button id="btn-touch-down" class="mc-btn w-12 h-12 text-xs font-bold bg-blue-900/80">▼ Bajar</button>
+            </div>
+        </div>
+
+        <!-- Bottom Hotbar Selector -->
+        <div class="flex flex-col items-center gap-2 pointer-events-auto mb-1">
+            <div class="flex gap-2 md:hidden mb-1">
+                <button id="btn-touch-break" class="mc-btn px-3 py-1.5 text-xs bg-red-800 text-white font-bold">🔨 Romper</button>
+                <button id="btn-touch-place" class="mc-btn px-3 py-1.5 text-xs bg-green-800 text-white font-bold">🧱 Colocar</button>
+                <button id="btn-touch-fly" onclick="toggleFlightMode()" class="mc-btn px-3 py-1.5 text-xs bg-cyan-800 text-white font-bold">✈️ Vuelo</button>
+            </div>
+
+            <div id="hotbar-container" class="flex gap-1 bg-black/80 p-1.5 rounded border-2 border-gray-600 overflow-x-auto max-w-full">
+                <!-- Hotbar slots dynamically loaded -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* WORLD & ENGINE GAME STATE */
+        let scene, camera, renderer;
+        let worldBlocks = new Map(); 
+        let selectedWorldSize = 32;
+        let sensitivity = 1.0;
+        let isGameRunning = false;
+        let isPaused = false;
+        let flightMode = true;
+
+        // Pointer & Touch Controls
+        let isDraggingMouse = false;
+        let previousTouchX = 0, previousTouchY = 0, activeTouchId = null;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
+        let cameraRotation = { yaw: 0, pitch: 0 };
+        let activeHotbarIndex = 0;
+
+        // Audio Context Synthesizer
+        let audioCtx = null;
+
+        // Selection Highlight Mesh
+        let highlightBox = null;
+        let raycaster = new THREE.Raycaster();
+        let mouseCenter = new THREE.Vector2(0, 0);
+
+        // Block Materials Data
+        const blockTypes = [
+            { id: 1, name: 'Tierra', color: 0x8b5a2b, icon: '🟤' },
+            { id: 2, name: 'Piedra', color: 0x808080, icon: '🔘' },
+            { id: 3, name: 'Pasto', color: 0x47853b, icon: '🟩' },
+            { id: 4, name: 'Madera', color: 0x5c4033, icon: '🪵' },
+            { id: 5, name: 'Hojas', color: 0x2e8b57, icon: '🍃' },
+            { id: 6, name: 'Cristal', color: 0xadd8e6, icon: '🧊', transparent: true, opacity: 0.6 },
+            { id: 7, name: 'Ladrillo', color: 0xb22222, icon: '🧱' },
+            { id: 8, name: 'Oro', color: 0xffd700, icon: '🟨' },
+            { id: 9, name: 'Diamante', color: 0x00ffff, icon: '🔷' }
+        ];
+
+        let customMapGrid = new Array(100).fill(1);
+        let currentBrushType = 1;
+
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+                if (type === 'break') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'place') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                }
+            } catch (e) { }
+        }
+
+        function initGameCore() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb); // Minecraft Sky Color
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // Ambient & Directional Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            sunLight.position.set(50, 100, 50);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
+
+            // Block Highlight Wireframe Box
+            const boxGeo = new THREE.BoxGeometry(1.01, 1.01, 1.01);
+            const wireGeo = new THREE.WireframeGeometry(boxGeo);
+            highlightBox = new THREE.LineSegments(wireGeo, new THREE.MeshBasicMaterial({ color: 0x000000, linewidth: 2 }));
+            highlightBox.visible = false;
+            scene.add(highlightBox);
+
+            window.addEventListener('resize', onWindowResize);
+            setupInputListeners();
+            renderHotbar();
+            initMapMakerGrid();
+            initTextureStudioPreview();
+
+            // Start Main Game Loop
+            animate();
+        }
+
+        function setupInputListeners() {
+            document.addEventListener('keydown', (e) => {
+                if (!isGameRunning || isPaused) return;
+                switch (e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'Space': moveUp = true; break;
+                    case 'ShiftLeft': moveDown = true; break;
+                    case 'Digit1': selectHotbarSlot(0); break;
+                    case 'Digit2': selectHotbarSlot(1); break;
+                    case 'Digit3': selectHotbarSlot(2); break;
+                    case 'Digit4': selectHotbarSlot(3); break;
+                    case 'Digit5': selectHotbarSlot(4); break;
+                    case 'Digit6': selectHotbarSlot(5); break;
+                    case 'Digit7': selectHotbarSlot(6); break;
+                    case 'Digit8': selectHotbarSlot(7); break;
+                    case 'Digit9': selectHotbarSlot(8); break;
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                switch (e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                    case 'Space': moveUp = false; break;
+                    case 'ShiftLeft': moveDown = false; break;
+                }
+            });
+
+            // Pointer Lock Interaction for Mouse Desktop
+            window.addEventListener('click', (e) => {
+                if (!isGameRunning || isPaused) return;
+                if (e.target.closest('#game-hud') || e.target.closest('#pause-menu')) return;
+
+                if (document.pointerLockElement !== document.body) {
+                    document.body.requestPointerLock();
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isGameRunning || isPaused) return;
+                if (document.pointerLockElement === document.body || isDraggingMouse) {
+                    rotateCamera(e.movementX, e.movementY);
+                }
+            });
+
+            document.addEventListener('mousedown', (e) => {
+                if (!isGameRunning || isPaused) return;
+                if (e.target.closest('#game-hud')) return;
+
+                if (document.pointerLockElement === document.body) {
+                    if (e.button === 0) breakBlockRaycast();
+                    if (e.button === 2) placeBlockRaycast();
+                } else {
+                    isDraggingMouse = true;
+                }
+            });
+
+            document.addEventListener('mouseup', () => { isDraggingMouse = false; });
+
+            // Mobile Screen Drag Camera Look
+            const touchZone = document.getElementById('touch-look-zone');
+            touchZone.addEventListener('touchstart', (e) => {
+                if (!isGameRunning || isPaused) return;
+                const touch = e.changedTouches[0];
+                activeTouchId = touch.identifier;
+                previousTouchX = touch.clientX;
+                previousTouchY = touch.clientY;
+            }, { passive: true });
+
+            touchZone.addEventListener('touchmove', (e) => {
+                if (!isGameRunning || isPaused) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === activeTouchId) {
+                        const deltaX = touch.clientX - previousTouchX;
+                        const deltaY = touch.clientY - previousTouchY;
+                        rotateCamera(deltaX, deltaY);
+                        previousTouchX = touch.clientX;
+                        previousTouchY = touch.clientY;
+                        break;
+                    }
+                }
+            }, { passive: true });
+
+            touchZone.addEventListener('touchend', () => { activeTouchId = null; });
+
+            // Touch D-Pad Controls
+            setupTouchDPad('btn-touch-fwd', v => moveForward = v);
+            setupTouchDPad('btn-touch-back', v => moveBackward = v);
+            setupTouchDPad('btn-touch-left', v => moveLeft = v);
+            setupTouchDPad('btn-touch-right', v => moveRight = v);
+            setupTouchDPad('btn-touch-up', v => moveUp = v);
+            setupTouchDPad('btn-touch-down', v => moveDown = v);
+
+            window.addEventListener('contextmenu', e => e.preventDefault());
+            document.getElementById('btn-touch-break').onclick = () => breakBlockRaycast();
+            document.getElementById('btn-touch-place').onclick = () => placeBlockRaycast();
+        }
+
+        function rotateCamera(deltaX, deltaY) {
+            cameraRotation.yaw -= deltaX * 0.0025 * sensitivity;
+            cameraRotation.pitch -= deltaY * 0.0025 * sensitivity;
+            cameraRotation.pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, cameraRotation.pitch));
+
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = cameraRotation.yaw;
+            camera.rotation.x = cameraRotation.pitch;
+        }
+
+        function setupTouchDPad(btnId, setMovement) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); setMovement(true); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); setMovement(false); });
+        }
+
+        function generateProceduralWorld(size) {
+            // Clear existing blocks
+            worldBlocks.forEach(mesh => scene.remove(mesh));
+            worldBlocks.clear();
+
+            const half = Math.floor(size / 2);
+
+            for (let x = -half; x < half; x++) {
+                for (let z = -half; z < half; z++) {
+                    // Simple height variance
+                    const height = Math.floor(Math.sin(x * 0.2) * Math.cos(z * 0.2) * 2) + 2;
+
+                    for (let y = 0; y <= height; y++) {
+                        let bType = 1; // Dirt
+                        if (y === height) bType = 3; // Grass top
+                        else if (y < height - 2) bType = 2; // Stone underground
+
+                        createBlockInstance(x, y, z, bType);
+                    }
+
+                    // Trees generation chance
+                    if (Math.random() < 0.02 && x > -half + 2 && x < half - 2 && z > -half + 2 && z < half - 2) {
+                        for (let ty = 1; ty <= 4; ty++) createBlockInstance(x, height + ty, z, 4); // Wood
+                        for (let lx = -1; lx <= 1; lx++) {
+                            for (let lz = -1; lz <= 1; lz++) {
+                                for (let ly = 4; ly <= 5; ly++) {
+                                    if (lx === 0 && lz === 0 && ly === 4) continue;
+                                    createBlockInstance(x + lx, height + ly, z + lz, 5); // Leaves
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Spawn player safely above height
+            camera.position.set(0, 8, 12);
+            cameraRotation.yaw = 0;
+            cameraRotation.pitch = -0.2;
+        }
+
+        function createBlockInstance(x, y, z, typeId) {
+            const key = `${x},${y},${z}`;
+            if (worldBlocks.has(key)) return;
+
+            const bData = blockTypes.find(b => b.id === typeId) || blockTypes[0];
+            const geo = new THREE.BoxGeometry(1, 1, 1);
+            
+            const matProps = { color: bData.color };
+            if (bData.transparent) {
+                matProps.transparent = true;
+                matProps.opacity = bData.opacity || 0.7;
+            }
+
+            const mat = new THREE.MeshLambertMaterial(matProps);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.userData = { x, y, z, typeId };
+
+            scene.add(mesh);
+            worldBlocks.set(key, mesh);
+        }
+
+        function updateRaycastHighlight() {
+            if (!isGameRunning || isPaused) return;
+
+            raycaster.setFromCamera(mouseCenter, camera);
+            const intersects = raycaster.intersectObjects(Array.from(worldBlocks.values()));
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                if (hit.distance < 8) {
+                    highlightBox.position.copy(hit.object.position);
+                    highlightBox.visible = true;
+                    return;
+                }
+            }
+            highlightBox.visible = false;
+        }
+
+        function breakBlockRaycast() {
+            raycaster.setFromCamera(mouseCenter, camera);
+            const intersects = raycaster.intersectObjects(Array.from(worldBlocks.values()));
+
+            if (intersects.length > 0 && intersects[0].distance < 8) {
+                const hitObj = intersects[0].object;
+                const { x, y, z } = hitObj.userData;
+                const key = `${x},${y},${z}`;
+
+                scene.remove(hitObj);
+                worldBlocks.delete(key);
+                playSound('break');
+            }
+        }
+
+        function placeBlockRaycast() {
+            raycaster.setFromCamera(mouseCenter, camera);
+            const intersects = raycaster.intersectObjects(Array.from(worldBlocks.values()));
+
+            if (intersects.length > 0 && intersects[0].distance < 8) {
+                const hit = intersects[0];
+                const normal = hit.face.normal;
+                const targetPos = hit.object.position.clone().add(normal);
+
+                const currentBlock = blockTypes[activeHotbarIndex];
+                if (currentBlock) {
+                    createBlockInstance(targetPos.x, targetPos.y, targetPos.z, currentBlock.id);
+                    playSound('place');
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isGameRunning && !isPaused) {
+                // Movement Vector Calculation
+                const speed = flightMode ? 0.25 : 0.12;
+                const moveVec = new THREE.Vector3();
+
+                if (moveForward) moveVec.z -= 1;
+                if (moveBackward) moveVec.z += 1;
+                if (moveLeft) moveVec.x -= 1;
+                if (moveRight) moveVec.x += 1;
+                moveVec.normalize();
+
+                const yaw = cameraRotation.yaw;
+                const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+                const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+
+                const moveDir = new THREE.Vector3();
+                moveDir.addScaledVector(forward, -moveVec.z);
+                moveDir.addScaledVector(side, moveVec.x);
+                moveDir.multiplyScalar(speed);
+
+                camera.position.add(moveDir);
+
+                if (moveUp) camera.position.y += speed;
+                if (moveDown) camera.position.y -= speed;
+
+                updateRaycastHighlight();
+            }
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        function renderHotbar() {
+            const container = document.getElementById('hotbar-container');
+            container.innerHTML = '';
+
+            blockTypes.forEach((b, idx) => {
+                const slot = document.createElement('div');
+                slot.className = `hotbar-slot ${idx === activeHotbarIndex ? 'active' : ''}`;
+                slot.innerHTML = `<span>${b.icon}</span>`;
+                slot.onclick = () => selectHotbarSlot(idx);
+                container.appendChild(slot);
+            });
+        }
+
+        function selectHotbarSlot(idx) {
+            if (idx >= 0 && idx < blockTypes.length) {
+                activeHotbarIndex = idx;
+                renderHotbar();
+            }
+        }
+
+        function showWorldSizeMenu() {
+            hideAllMenus();
+            document.getElementById('world-size-menu').classList.remove('hidden');
+        }
+
+        function selectWorldSize(sz) {
+            selectedWorldSize = sz;
+            document.querySelectorAll('[id^="size-btn-"]').forEach(btn => btn.classList.remove('border-yellow-400'));
+            const activeBtn = document.getElementById(`size-btn-${sz}`);
+            if (activeBtn) activeBtn.classList.add('border-yellow-400');
+        }
+
+        function startNewGame() {
+            hideAllMenus();
+            document.getElementById('game-hud').classList.remove('hidden');
+            document.getElementById('crosshair').classList.remove('hidden');
+            document.getElementById('touch-look-zone').classList.remove('hidden');
+            document.getElementById('hud-world-info').innerText = `${selectedWorldSize}x${selectedWorldSize}`;
+
+            if (!renderer) initGameCore();
+            generateProceduralWorld(selectedWorldSize);
+            isGameRunning = true;
+            isPaused = false;
+        }
+
+        function toggleFlightMode() {
+            flightMode = !flightMode;
+            document.getElementById('flight-mode-text').innerText = flightMode ? "Vuelo ON" : "Vuelo OFF";
+        }
+
+        function toggleFlightModeSetting() {
+            toggleFlightMode();
+            document.getElementById('flight-toggle-btn').innerText = flightMode ? "ON" : "OFF";
+        }
+
+        function pauseGame() {
+            isPaused = true;
+            document.exitPointerLock();
+            document.getElementById('pause-menu').classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            isPaused = false;
+            document.getElementById('pause-menu').classList.add('hidden');
+        }
+
+        function exitToMainMenu() {
+            isGameRunning = false;
+            isPaused = false;
+            document.exitPointerLock();
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('crosshair').classList.add('hidden');
+            document.getElementById('touch-look-zone').classList.add('hidden');
+            document.getElementById('pause-menu').classList.add('hidden');
+            backToMainMenu();
+        }
+
+        function hideAllMenus() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('world-size-menu').classList.add('hidden');
+            document.getElementById('texture-studio-menu').classList.add('hidden');
+            document.getElementById('map-maker-menu').classList.add('hidden');
+            document.getElementById('graphics-settings-menu').classList.add('hidden');
+            document.getElementById('updates-info-menu').classList.add('hidden');
+        }
+
+        function backToMainMenu() {
+            hideAllMenus();
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function showUpdatesInfoScreen() {
+            hideAllMenus();
+            document.getElementById('updates-info-menu').classList.remove('hidden');
+        }
+
+        function showTextureStudio() { hideAllMenus(); document.getElementById('texture-studio-menu').classList.remove('hidden'); }
+        function showMapMaker() { hideAllMenus(); document.getElementById('map-maker-menu').classList.remove('hidden'); }
+        function showGraphicsSettings() { hideAllMenus(); document.getElementById('graphics-settings-menu').classList.remove('hidden'); }
+
+        function updateSensitivity(val) {
+            sensitivity = val / 100;
+            document.getElementById('sensitivity-value-display').innerText = `${val}%`;
+        }
+
+        function initTextureStudioPreview() {
+            const canvas = document.getElementById('preview-canvas-3d');
+            if (!canvas) return;
+            const pRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            pRenderer.setSize(144, 144);
+
+            const pScene = new THREE.Scene();
+            const pCam = new THREE.PerspectiveCamera(45, 1, 0.1, 10);
+            pCam.position.set(2, 2, 2);
+            pCam.lookAt(0, 0, 0);
+
+            const pGeo = new THREE.BoxGeometry(1, 1, 1);
+            const pMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c });
+            const pMesh = new THREE.Mesh(pGeo, pMat);
+            pScene.add(pMesh);
+
+            pScene.add(new THREE.AmbientLight(0xffffff, 0.8));
+
+            function animPreview() {
+                requestAnimationFrame(animPreview);
+                pMesh.rotation.y += 0.01;
+                pRenderer.render(pScene, pCam);
+            }
+            animPreview();
+        }
+
+        function onCustomColorChange(colorHex) {
+            // Live update previews if needed
+        }
+
+        function openPixelEditorModal() {
+            document.getElementById('pixel-editor-modal').classList.remove('hidden');
+            initPixelCanvas();
+        }
+
+        function closePixelEditorModal() {
+            document.getElementById('pixel-editor-modal').classList.add('hidden');
+        }
+
+        function initPixelCanvas() {
+            const canvas = document.getElementById('pixel-editor-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = document.getElementById('custom-block-color').value;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function fillPixelGridWithBrush() {
+            const canvas = document.getElementById('pixel-editor-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = document.getElementById('pixel-brush-color').value;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function addCustomColorBlock() {
+            const colorVal = document.getElementById('custom-block-color').value;
+            const nameVal = document.getElementById('custom-block-name').value || 'Custom';
+            
+            const newId = blockTypes.length + 1;
+            blockTypes.push({
+                id: newId,
+                name: nameVal,
+                color: parseInt(colorVal.replace('#', '0x')),
+                icon: '🎨'
+            });
+
+            renderHotbar();
+            selectHotbarSlot(blockTypes.length - 1);
+            backToMainMenu();
+        }
+
+        function initMapMakerGrid() {
+            const gridContainer = document.getElementById('map-grid-container');
+            gridContainer.innerHTML = '';
+            for (let i = 0; i < 100; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'w-8 h-8 grid-cell bg-yellow-900/60 rounded';
+                cell.onclick = () => {
+                    customMapGrid[i] = currentBrushType;
+                    cell.className = `w-8 h-8 grid-cell rounded ${getBrushColorClass(currentBrushType)}`;
+                };
+                gridContainer.appendChild(cell);
+            }
+        }
+
+        function getBrushColorClass(type) {
+            switch (type) {
+                case 1: return 'bg-yellow-800';
+                case 2: return 'bg-gray-500';
+                case 3: return 'bg-green-600';
+                case 4: return 'bg-amber-900';
+                default: return 'bg-black/80';
+            }
+        }
+
+        function setMapMakerBrush(type) {
+            currentBrushType = type;
+        }
+
+        function playCustomMap() {
+            hideAllMenus();
+            document.getElementById('game-hud').classList.remove('hidden');
+            document.getElementById('crosshair').classList.remove('hidden');
+            document.getElementById('touch-look-zone').classList.remove('hidden');
+
+            if (!renderer) initGameCore();
+
+            worldBlocks.forEach(mesh => scene.remove(mesh));
+            worldBlocks.clear();
+
+            for (let i = 0; i < 100; i++) {
+                const x = (i % 10) - 5;
+                const z = Math.floor(i / 10) - 5;
+                const bType = customMapGrid[i];
+                if (bType !== 0) {
+                    createBlockInstance(x, 0, z, bType);
+                }
+            }
+
+            camera.position.set(0, 5, 8);
+            isGameRunning = true;
+            isPaused = false;
+        }
+
+        function onWindowResize() {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+
+        // Initialize core engine structure when window finishes loading
+        window.onload = function() {
+            initGameCore();
+        };
+    </script>
+</body>
+</html>
